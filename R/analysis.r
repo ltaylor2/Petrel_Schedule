@@ -661,7 +661,7 @@ plot_env_success <- ggplot(not_emp_both_summaries) +
                  scale_fill_continuous(low="white", high="gray10", name="Success rate",
                                        limits=c(0, 1)) +
                  xlab("Foraging mean (kJ/day)") +
-                 ylab("Foraging S.D. (kJ/day)") +
+                 ylab("Foraging SD (kJ/day)") +
                  theme_lt +
                  theme(legend.title.position="right",
                        legend.title=element_text(size=8, angle=-90, hjust=0.5, vjust=0),
@@ -677,7 +677,7 @@ plot_env_var <- ggplot(not_emp_both_summaries) +
                                    limits=c(0, 0.16),
                                    breaks=seq(0, 0.16, by=0.04), name="Variance success\nbetween parent strategies") +
              xlab("Foraging mean (kJ/day)") +
-             ylab("Foraging S.D. (kJ/day)") +
+             ylab("Foraging SD (kJ/day)") +
              theme_lt +
              theme(legend.title.position="right",
                    legend.title=element_text(size=6, angle=-90, hjust=0.5, vjust=0),
