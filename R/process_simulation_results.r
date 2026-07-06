@@ -9,9 +9,9 @@ library(pbapply)
 library(stringr)
 
 # Filename for full simulation output
-RESULTS_SUFFIX <- "ms-1000iter"
+RESULTS_SUFFIX <- "ms2-1000iter"
 
-SIM_TYPES <- c("regular", "eggTolerance", "eggCost", "swapSexOrder", "oneParent")
+SIM_TYPES <- c("regular", "eggTolerance", "eggCost", "swapSexOrder", "oneParent", "startEnergy")
 
 ############################################################
 ### calcBouts - calculate bout information for a schedule
@@ -98,7 +98,7 @@ processGroup <- function(chunk) {
     keys <- chunk[1, .(Min_Energy_Thresh_F, Max_Energy_Thresh_F,
                        Min_Energy_Thresh_M, Max_Energy_Thresh_M,
                        Foraging_Condition_Mean, Foraging_Condition_SD,
-                       Egg_Tolerance, Egg_Cost, Num_Parents)]
+                       Egg_Tolerance, Start_Energy, Egg_Cost, Num_Parents)]
 
     n <- nrow(chunk)
 
@@ -215,7 +215,7 @@ process_data_file <- function(type, suffix) {
     GROUP_KEYS <- c("Min_Energy_Thresh_F", "Max_Energy_Thresh_F",
                     "Min_Energy_Thresh_M", "Max_Energy_Thresh_M",
                     "Foraging_Condition_Mean", "Foraging_Condition_SD",
-                    "Egg_Tolerance", "Egg_Cost", "Num_Parents")
+                    "Egg_Tolerance", "Egg_Cost", "Start_Energy", "Num_Parents")
 
     # Split into list of data.tables, one per parameter combination
     groups <- split(dat, by = GROUP_KEYS, keep.by = TRUE)
@@ -240,7 +240,54 @@ process_data_file <- function(type, suffix) {
 }
 
 ############################################################
+### Function to print incubation bout runs for a schedule
+############################################################
+incubation_bout_runs <- function(schedule, sex) {
+    chars <- strsplit(schedule, "")[[1]]
+    schedule <- ifelse(chars == sex, "1", "0")
+    runs <- rle(schedule)
+    incubation_bouts <- runs$lengths[runs$values=="1"] 
+    printed_bouts <- paste(incubation_bouts, collapse=";")
+    return(printed_bouts)
+}
+
+############################################################
+### Function to pull a list of schedules for successful, empirical bouts only
+############################################################
+process_empirical_incubation_bouts <- function() {
+
+    f <- paste0("Output/sims_regular_", RESULTS_SUFFIX, ".csv")
+
+    # AWK filter built with help from Claude Sonnet v5
+    awk_filter <- paste0(
+        "awk -F',' '",
+        "NR==1{for(i=1;i<=NF;i++) h[$i]=i; print; next} ",
+        "{",
+        "if ($h[\"Min_Energy_Thresh_F\"]>=400 && $h[\"Min_Energy_Thresh_F\"]<=700 && ",
+        "$h[\"Max_Energy_Thresh_F\"]>=700 && $h[\"Max_Energy_Thresh_F\"]<=900 && ",
+        "$h[\"Min_Energy_Thresh_M\"]>=400 && $h[\"Min_Energy_Thresh_M\"]<=700 && ",
+        "$h[\"Max_Energy_Thresh_M\"]>=700 && $h[\"Max_Energy_Thresh_M\"]<=900 && ",
+        "$h[\"Foraging_Condition_Mean\"]==162 && $h[\"Foraging_Condition_SD\"]==47 && ",
+        "$h[\"Hatch_Result\"]==\"hatched\"",
+        ") print",
+        "}' ", f
+    )
+
+    dat <- fread(cmd = awk_filter)
+
+    dat[, Printed_Bouts_F := vapply(Season_History, incubation_bout_runs, character(1), sex="F")]
+    dat[, Printed_Bouts_M := vapply(Season_History, incubation_bout_runs, character(1), sex="M")]
+
+    return(dat[, .(Season_History, Printed_Bouts_F, Printed_Bouts_M)])
+}
+
+############################################################
 ### Run
 ############################################################
 
+# Process summary values across all simulation files
 for (type in SIM_TYPES) { process_data_file(type, RESULTS_SUFFIX) }
+
+# Process the schedules for empirical strategies/environment
+emp_schedules <- process_empirical_incubation_bouts()
+fwrite(emp_schedules, paste0("Output/processed_schedules_empirical.csv"))

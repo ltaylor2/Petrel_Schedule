@@ -12,7 +12,7 @@
 #include "Egg.hpp"
 #include "Parent.hpp"
 
-static std::string OUTPUT_SUFFIX = "ms-1000iter";
+static std::string OUTPUT_SUFFIX = "ms2-1000iter";
 static int ITERATIONS = 1000;
 
 constexpr static double P_MIN_ENERGY_THRESH[] = {200, 1100, 100};
@@ -26,6 +26,7 @@ constexpr static double P_FORAGING_SD[] = {0, 100, 10};
 
 constexpr static int P_EGG_TOLERANCE_SHIFTED[] = {1, 7, 1};
 constexpr static double P_EGG_COST_SHIFTED[] = {0, 500, 100};
+constexpr static double P_START_ENERGY_SHIFTED[] = {300, 1300, 100};
 
 // Need a single, static random generator device to let us only seed once
 static std::mt19937* randGen;
@@ -41,6 +42,7 @@ void runModel(int iterations,
 	          std::vector<double> v_foragingSD,
 			  std::vector<int> v_eggTolerance,
 			  std::vector<double> v_eggCost,
+			  std::vector<double> v_startEnergy,
 			  bool oneParent, bool swapSexOrder);
 
 std::string breedingSeason(Parent& pf, Parent& pm, Egg& egg, bool swapSexOrder);
@@ -71,7 +73,9 @@ int main()
 	std::vector<int> v_eggTolerance_shifted            = paramVector(P_EGG_TOLERANCE_SHIFTED);
 	std::vector<double> v_eggCost_empirical            = paramVector(69.7);
 	std::vector<double> v_eggCost_shifted              = paramVector(P_EGG_COST_SHIFTED);
-
+	std::vector<double> v_startEnergy_empirical        = paramVector(766.0);
+	std::vector<double> v_startEnergy_shifted          = paramVector(P_START_ENERGY_SHIFTED);
+	
 	std::cout << "\n\n\nBeginning regular model runs\n\n\n";
 	std::string outfileName_regular = std::string("../Output/sims_regular_") + OUTPUT_SUFFIX + std::string(".csv");
     runModel(ITERATIONS, 
@@ -84,9 +88,10 @@ int main()
 			 v_foragingSD_full,
 			 v_eggTolerance_empirical, 
 			 v_eggCost_empirical,
+			 v_startEnergy_empirical,
 			 false, false);
 
-	std::cout << "\n\n\nDone with regular models.\nBeginning egg tolerance runs.\n\n\n";
+	std::cout << "\n\n\nDone with regular runs.\nBeginning egg tolerance runs.\n\n\n";
 	std::string outfileName_eggTolerance = std::string("../Output/sims_eggTolerance_") + OUTPUT_SUFFIX + std::string(".csv");
 	runModel(ITERATIONS, 
              outfileName_eggTolerance, 
@@ -98,9 +103,10 @@ int main()
 			 v_foragingSD_empirical,
 			 v_eggTolerance_shifted,
 			 v_eggCost_empirical,
+			 v_startEnergy_empirical,
 			 false, false);
 
-	std::cout << "\n\n\nDone with egg tolerance models.\nBeginning egg cost runs.\n\n\n";
+	std::cout << "\n\n\nDone with egg tolerance runs.\nBeginning egg cost runs.\n\n\n";
 	std::string outfileName_eggCost = std::string("../Output/sims_eggCost_") + OUTPUT_SUFFIX + std::string(".csv");
 	runModel(ITERATIONS, 
              outfileName_eggCost, 
@@ -112,9 +118,10 @@ int main()
 			 v_foragingSD_empirical,
 			 v_eggTolerance_empirical,
 			 v_eggCost_shifted,
+			 v_startEnergy_empirical,
 			 false, false);
 
-	std::cout << "\n\n\nDone with egg cost models.\nBeginning swapped sex order model.\n\n\n";
+	std::cout << "\n\n\nDone with egg cost runs.\nBeginning swapped sex order runs.\n\n\n";
 	std::string outfileName_swapSexOrder = std::string("../Output/sims_swapSexOrder_") + OUTPUT_SUFFIX + std::string(".csv");
 	runModel(ITERATIONS, 
              outfileName_swapSexOrder, 
@@ -126,9 +133,10 @@ int main()
 			 v_foragingSD_empirical,
 			 v_eggTolerance_empirical,
 			 v_eggCost_empirical,
+			 v_startEnergy_empirical,
 			 false, true);
 						  
-	std::cout << "\n\n\nDone with swapped sex order models.\nBeginning one parent model.\n\n\n";
+	std::cout << "\n\n\nDone with swapped sex order runs.\nBeginning one parent runs.\n\n\n";
 	std::string outfileName_oneParent = std::string("../Output/sims_oneParent_") + OUTPUT_SUFFIX + std::string(".csv");
 	std::vector<double> v_dummyMale_min(1, 0.0);
 	std::vector<double> v_dummyMale_max(1, 1.0);
@@ -144,7 +152,24 @@ int main()
 			 v_foragingSD_empirical,
 			 v_eggTolerance_empirical,
 			 v_eggCost_empirical,
+			 v_startEnergy_empirical,
 			 true, false);
+
+
+	std::cout << "\n\n\nDone with one parent runs.\nBeginning start energy runs.\n\n\n";
+	std::string outfileName_startEnergy = std::string("../Output/sims_startEnergy_") + OUTPUT_SUFFIX + std::string(".csv");
+	runModel(ITERATIONS, 
+             outfileName_startEnergy, 
+             v_minEnergyThresh_empirical, 
+             v_maxEnergyThresh_empirical,
+             v_minEnergyThresh_empirical, 
+             v_maxEnergyThresh_empirical, 
+             v_foragingMean_empirical,
+			 v_foragingSD_empirical,
+			 v_eggTolerance_empirical,
+			 v_eggCost_empirical,
+			 v_startEnergy_shifted,
+			 false, false);
 
 	std::cout << "Ended model runs\n";
 
@@ -170,6 +195,7 @@ void runModel(int iterations,
 			  std::vector<double> v_foragingSD,
 			  std::vector<int> v_eggTolerance,
 			  std::vector<double> v_eggCost,
+			  std::vector<double> v_startEnergy,
 			  bool oneParent, bool swapSexOrder)
 {
     
@@ -187,6 +213,7 @@ void runModel(int iterations,
             << "Foraging_Condition_SD" << ","
 			<< "Egg_Tolerance" << ","
 			<< "Egg_Cost" << ","
+			<< "Start_Energy" << ","
 			<< "Num_Parents" << ","
 	    	<< "Hatch_Result" << ","
 			<< "Hatch_Days" << ","
@@ -226,7 +253,8 @@ void runModel(int iterations,
 							 v_foragingMean.size() * 
 							 v_foragingSD.size() *
 							 v_eggTolerance.size() *
-							 v_eggCost.size();
+							 v_eggCost.size() *
+							 v_startEnergy.size();
 
     std::cout << "Estimated parameter combinations: " << totParamIterations << std::endl;
 	int currParamIteration = 0;
@@ -266,6 +294,9 @@ void runModel(int iterations,
 	for (unsigned int h = 0; h < v_eggCost.size(); h++) {
 		double eggCost = v_eggCost[h];
 
+	for (unsigned int j = 0; j < v_startEnergy.size(); j++) {
+		double startEnergy = v_startEnergy[j];
+
 		// Mildly helpful progress update
 		currParamIteration++;
 		int progressStep = std::max(1, totParamIterations / 100);
@@ -293,10 +324,12 @@ void runModel(int iterations,
             pf.setMinEnergyThresh(minEnergyThresh_F);
             pf.setMaxEnergyThresh(maxEnergyThresh_F);
             pf.setForagingDistribution(foragingMean, foragingSD);   
-            
+            pf.setEnergy(startEnergy);
+
             pm.setMinEnergyThresh(minEnergyThresh_M);
             pm.setMaxEnergyThresh(maxEnergyThresh_M);
             pm.setForagingDistribution(foragingMean, foragingSD);
+			pm.setEnergy(startEnergy);
 
             // Run the given breeding season model function
 			std::string seasonHistory = "";
@@ -354,6 +387,7 @@ void runModel(int iterations,
                     << foragingSD << ","
 					<< eggTolerance << ","
 					<< eggCost << ","
+					<< startEnergy << ","
 					<< numParents << ","
                     << hatchResult << ","
                     << hatchDays << ","
@@ -369,7 +403,7 @@ void runModel(int iterations,
                     << dead_M << ","
                     << seasonHistory << std::endl;
         }
-    } } } } } } } } // End parameter loops
+    } } } } } } } } } // End parameter loops
 
 	// Close file and exit
 	outfile.close();

@@ -3,8 +3,7 @@
 Parent::Parent(Sex sex_, std::mt19937* randGen_):
 	sex(sex_),
 	randGen(randGen_),
-	energy(MAX_ENERGY_THRESHOLD),
-	baseEnergy(MAX_ENERGY_THRESHOLD),
+	energy(START_ENERGY),
 	incubatingMetabolism(INCUBATING_METABOLISM),
 	foragingMetabolism(FORAGING_METABOLISM),
     minEnergyThresh(MIN_ENERGY_THRESHOLD),

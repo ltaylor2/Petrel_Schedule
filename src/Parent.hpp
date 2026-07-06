@@ -41,7 +41,6 @@ public:
     void setState(State state_) { this->state = state_ ; }
     void setPrevDayState(State state_) { this->previousDayState = state_; }
     void setEnergy(double energy_) { this->energy = energy_; }
-    void setBaseEnergy(double baseEnergy_) { this->baseEnergy = baseEnergy_; }
     void setIncubatingMetabolism(double incubatingMetabolism_) { this->incubatingMetabolism = incubatingMetabolism_; }
     void setForagingMetabolism(double foragingMetabolism_) { this->foragingMetabolism = foragingMetabolism_; }
     void setMinEnergyThresh(double minEnergyThresh_) { this->minEnergyThresh = minEnergyThresh_; }
@@ -51,7 +50,6 @@ public:
     // Getters
     Sex getSex() { return this->sex; }
     double getEnergy() { return this->energy; }
-    double getbaseEnergy() { return this->baseEnergy; }
     double getIncubatingMetabolism() { return this->incubatingMetabolism; }
     double getForagingMetabolism() { return this->foragingMetabolism; }
     double getMinEnergyThresh() { return this->minEnergyThresh; }
@@ -80,7 +78,7 @@ private:
     Derived from the mean energy adults had at the beginning of observed
     incubation bouts in Ricklefs et al. (1986)
     */
-    constexpr static double BASE_ENERGY = 766.0;
+    constexpr static double START_ENERGY = 766.0;
 
     /*
     Metabolic rate requirements while incubating and foraging (kJ/day)
@@ -92,17 +90,17 @@ private:
 
     /*
     The deterministc threshold below which incubation ceases
-    (at the end of the day), here equaling the metabolic cost of
+    (at the end of the day), by default equaling the metabolic cost of
     foraging for a day.
     */
     constexpr static double MIN_ENERGY_THRESHOLD = FORAGING_METABOLISM;
 
     /*
     The deterministic threshold above which foraging ceases
-    (at the end of the day), here equaling the mean amount of energy at
-    which parents were found to start incubating (BASE_ENERGY)
+    (at the end of the day), by default equaling the mean amount of energy at
+    which parents were found to start incubating (START_ENERGY)
     */
-    constexpr static double MAX_ENERGY_THRESHOLD = BASE_ENERGY;
+    constexpr static double MAX_ENERGY_THRESHOLD = START_ENERGY;
 
     void incubate();
     void forage();
@@ -114,7 +112,6 @@ private:
     State state;                    // current state
     State previousDayState;         // state during the previous day
     double energy;                  // current energy value (kJ)
-    double baseEnergy;              // starting energy value
     double incubatingMetabolism;    // daily metabolism cost for incubation
     double foragingMetabolism;      // daily metabolism cost for foraging
     double minEnergyThresh;         // hunger threshold (incubating->foraging)
