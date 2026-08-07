@@ -34,21 +34,21 @@ public:
 
 private:
 
-	// Minimum observed incubation period (Huntington et al. 1996)
+	// Minimum observed incubation period (Pollet et al. 2021)
 	constexpr static double START_HATCH_DAYS = 37.0;
 
 	// High number as an upper limit on egg hatching
 	constexpr static double HATCH_DAYS_MAX = 60;
 
-    // Mean energetic contents of a single egg (kJ) from Montevecchi et al. 1983
+    	// Mean energetic contents of a single egg (kJ) from Montevecchi et al. 1983
 	constexpr static double EGG_COST = 69.7;
 
 	/*
 	Neglect comes with a developmental cost, increases the necessary
 	length of incubation.
 
-	Wheelwright and Boersma (1979) fit a line for Fork-Tailed Storm-Petrels,
-	with a slope of 0.7 for (days fully incubated) ~ (days neglect).
+	Boersma and Wheelwright (1979) fit a line for Fork-tailed Storm-Petrels,
+	with a slope of 0.7 for (days neglect) ~ (total incubation period).
 	Each day of neglect is thus expected to add (1/0.7)=1.43 days
 	to required incubation time.
 	*/
@@ -56,7 +56,7 @@ private:
 
 	/*
 	Maximum conseq. neglect before hatch failure 
-	(based on maximum values from Wheelwright and Boersma (1979)
+	(based on maximum values from Boersma and Wheelwright (1979)
 	in Fork-tailed Storm-petrels, 
 	matching anecdotal value from LT for Leach's Storm-Petrels
 	*/

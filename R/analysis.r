@@ -52,7 +52,7 @@ OF <- "Output/results_log.txt"
 ############################################################
 
 # Empirical parameter set only, including empirical parameters for the environment, egg,
-# and the range of empirical parent strategies
+# and the range of empirical pair strategy combinations
 emp <- dat_regular |>
     filter(Is_Empirical_Strategy, Foraging_Condition_Mean == 162, Foraging_Condition_SD == 47)
 
@@ -315,7 +315,7 @@ plot_success_distribution <- ggplot(emp_environment) +
                           scale_x_continuous(limits=c(0,1), breaks=seq(0, 1, by=0.1), oob=scales::oob_keep) +
                           scale_fill_manual(values=c("FALSE"="gray70", "TRUE"=EMPIRICAL_COLOR)) +
                           xlab("Success rate") +
-                          ylab("No. parent strategy combinations") +
+                          ylab("No. pair strategy combinations") +
                           guides(fill="none") +
                           theme_lt
 
@@ -366,7 +366,7 @@ plot_min_threshes <- ggplot(min_threshes,
                               scale="area",
                               colour="black", linewidth=0.05) +
                   stat_summary(fun=mean, geom="line", colour="black", linewidth=0.5) +
-                  scale_x_continuous(breaks=seq(200, 11000, by=200)) +
+                  scale_x_continuous(breaks=seq(200, 1100, by=200)) +
                   scale_y_continuous(limits=c(0, 1), breaks=seq(0, 1, by=0.25)) +
                   scale_fill_continuous(low="white", high="gray10", name="Success rate",
                                         limits=c(0, 1)) +    
@@ -643,64 +643,8 @@ plot_decline_hatch_mean <- ggplot() +
                         ylab("Success rate") +
                         theme_lt
 
-# Summarize mean and variance in success rates across not empirical conditions
-# for smooth sampling of foraging condition mean and SD sampling
-not_emp_both_summaries <- filter(dat_regular, 
-                                 Foraging_Condition_Mean != 162,    
-                                 Foraging_Condition_SD != 47) |>
-                       group_by(Foraging_Condition_Mean, Foraging_Condition_SD) |>
-                       summarize(Mean_Rate_Success = mean(Rate_Success),
-                                 Var_Rate_Success = var(Rate_Success), .groups="keep")
-
-# Tile plot of mean success rate as both the mean and SD foraging condition changes
-plot_env_success <- ggplot(not_emp_both_summaries) +
-                 geom_tile(aes(x=Foraging_Condition_Mean, 
-                               y=Foraging_Condition_SD, 
-                               fill=Mean_Rate_Success)) +
-                 scale_y_continuous(limits=c(0, 110), breaks=seq(10, 100, by=20)) +
-                 scale_fill_continuous(low="white", high="gray10", name="Success rate",
-                                       limits=c(0, 1)) +
-                 xlab("Foraging mean (kJ/day)") +
-                 ylab("Foraging SD (kJ/day)") +
-                 theme_lt +
-                 theme(legend.title.position="right",
-                       legend.title=element_text(size=8, angle=-90, hjust=0.5, vjust=0),
-                       legend.text=element_text(size=6))
-
-# Tile plot of variance in success rate as both the mean and SD foraging condition changes
-plot_env_var <- ggplot(not_emp_both_summaries) +
-             geom_tile(aes(x=Foraging_Condition_Mean, 
-                           y=Foraging_Condition_SD, 
-                           fill=Var_Rate_Success)) +
-             scale_y_continuous(limits=c(0, 110), breaks=seq(10, 100, by=20)) +
-             scale_fill_continuous(low="white", high="firebrick3", 
-                                   limits=c(0, 0.16),
-                                   breaks=seq(0, 0.16, by=0.04), name="Variance success\nbetween parent strategies") +
-             xlab("Foraging mean (kJ/day)") +
-             ylab("Foraging SD (kJ/day)") +
-             theme_lt +
-             theme(legend.title.position="right",
-                   legend.title=element_text(size=6, angle=-90, hjust=0.5, vjust=0),
-                   legend.text=element_text(size=6))
-
-# Assemble and print full environmental effects plot
-design <- "12"
-plot_declines <- plot_decline_hatch_mean + 
-              (plot_env_success / 
-                plot_env_var +
-                plot_layout(axes="collect")) +
-              plot_annotation(tag_levels="A", tag_prefix="(", tag_suffix=")") + 
-              plot_layout(design=design,
-                          widths=c(1, 0.7)) &
-              theme(legend.key.width = unit(0.1, "in"),
-                    legend.key.height = unit(0.1, "in"),
-                    legend.margin = margin(t=0, r=0, b=0, l=0),
-                    legend.box.spacing = unit(0.06, "in"),                  
-                    plot.tag.position="topleft",
-                    plot.tag=element_text(vjust=-2, hjust=-1),
-                    plot.margin = margin(t=2, r=4, b=2, l=4))
-ggsave(filename="Plots/FIGURE_4.png", plot=plot_declines, 
-       width=6.5, height=3, unit="in")
+ggsave(filename="Plots/FIGURE_4.png", plot=plot_decline_hatch_mean, 
+       width=3.5, height=2.5, unit="in")
 
 # Print hatching success averages as the environment declines
 cat("\n\nSuccess rate at 170 kJ/day, all strategies: Mean = ",
@@ -725,50 +669,6 @@ cat("\nSuccess rate at 130 kJ/day, empirical strategies: Mean = ",
     sd(filter(dat_regular, Is_Empirical_Strategy, Foraging_Condition_SD==47, Foraging_Condition_Mean==130)$Rate_Success),
     file=OF, append=TRUE)
 cat("\nLogistic switch-point, empirical strategies: ", mlog_emp_failpoint, file=OF, append=TRUE)
-cat("\nSuccess rate at 170 kJ/day, 10 kJ/day uncertainty: Mean = ",
-    mean(filter(dat_regular, Foraging_Condition_SD==10, Foraging_Condition_Mean==170)$Rate_Success),
-    "  SD = ",
-    sd(filter(dat_regular, Foraging_Condition_SD==10, Foraging_Condition_Mean==170)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nSuccess rate at 170 kJ/day, 100 kJ/day uncertainty: Mean = ",
-    mean(filter(dat_regular, Foraging_Condition_SD==100, Foraging_Condition_Mean==170)$Rate_Success),
-    "  SD = ",
-    sd(filter(dat_regular, Foraging_Condition_SD==100, Foraging_Condition_Mean==170)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nSuccess rate at 130 kJ/day, 10 kJ/day uncertainty: Mean = ",
-    mean(filter(dat_regular, Foraging_Condition_SD==10, Foraging_Condition_Mean==130)$Rate_Success),
-    "  SD = ",
-    sd(filter(dat_regular, Foraging_Condition_SD==10, Foraging_Condition_Mean==130)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nSuccess rate at 130 kJ/day, 100 kJ/day uncertainty: Mean = ",
-    mean(filter(dat_regular, Foraging_Condition_SD==100, Foraging_Condition_Mean==130)$Rate_Success),
-    "  SD = ",
-    sd(filter(dat_regular, Foraging_Condition_SD==100, Foraging_Condition_Mean==130)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nSuccess rate for empirical strategies 162 kJ/day, 10 kJ/day uncertainty: Mean = ",
-    mean(filter(dat_regular, Is_Empirical_Strategy, Foraging_Condition_SD==10, Foraging_Condition_Mean==162)$Rate_Success),
-    "  SD = ",
-    sd(filter(dat_regular, Is_Empirical_Strategy, Foraging_Condition_SD==10, Foraging_Condition_Mean==162)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nSuccess rate for empirical strategies 162 kJ/day, 100 kJ/day uncertainty: Mean = ",
-    mean(filter(dat_regular, Is_Empirical_Strategy, Foraging_Condition_SD==100, Foraging_Condition_Mean==162)$Rate_Success),
-    "  SD = ",
-    sd(filter(dat_regular, Is_Empirical_Strategy, Foraging_Condition_SD==100, Foraging_Condition_Mean==162)$Rate_Success),
-    file=OF, append=TRUE)
-
-# Printing details about variance in different environments
-cat("\n\nVariance in success across all strategies at 170 kJ/day: ",
-    var(filter(dat_regular, Foraging_Condition_Mean==170, Foraging_Condition_SD==47)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nVariance in success across all strategies at 130 kJ/day: ",
-    var(filter(dat_regular, Foraging_Condition_Mean==130, Foraging_Condition_SD==47)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nVariance in success across all strategies at 160 kJ/day when SD = 10 kJ/day: ",
-    var(filter(dat_regular, Foraging_Condition_Mean==160, Foraging_Condition_SD==10)$Rate_Success),
-    file=OF, append=TRUE)
-cat("\nVariance in success across all strategies at 160 kJ/day when SD = 100 kJ/day: ",
-    var(filter(dat_regular, Foraging_Condition_Mean==160, Foraging_Condition_SD==100)$Rate_Success),
-    file=OF, append=TRUE)
 
 ###############################################################
 ### Change in outcomes across environments
