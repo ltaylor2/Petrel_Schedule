@@ -91,7 +91,10 @@ cat("Mean success foraging bout (Both Trimmed)", summaryValues(emp$Mean_Foraging
 ############################################################
 
 # Schedules saved from successful simulations and empirical parameters only
-example_schedules <- read_csv("Output/processed_schedules_empirical.csv")
+# THIS CRASHED WITH readr::read_csv on only some implementations of R terminal handlers-bizarre!
+# So, we use read.csv
+example_schedules <- read.csv("Output/processed_schedules_empirical.csv") |>
+                  sample_n(1000)
 
 # Pivot compressed schedule strings to one-state-per-day-per-row for plotting
 scheds_for_plot <- select(example_schedules, Season_History) |>
@@ -99,7 +102,7 @@ scheds_for_plot <- select(example_schedules, Season_History) |>
                 mutate(I = row_number()) |>
                 pivot_longer(cols=-I, names_to="Day", values_to="State") |>
                 mutate(Day = as.numeric(Day)) |>
-                filter(!is.na(State) & State != "")
+                filter(!is.na(State) & State != "") 
   
 # Tile plot of incubation attendance schedules for successful seasons
 plot_schedule_examples <- ggplot(scheds_for_plot) +
@@ -114,6 +117,7 @@ plot_schedule_examples <- ggplot(scheds_for_plot) +
                              axis.text.y=element_blank(),
                              axis.ticks.y=element_blank(),
                              legend.position="top")
+
 ggsave(filename="Plots/FIGURE_S_SCHEDULE_EXAMPLES.png", plot=plot_schedule_examples,
        width=3, height=8, unit="in")
 
@@ -602,7 +606,7 @@ plot_comp_emp_date <- ggplot(comp_to_emp) +
 
 # Assemble empirical vs. worse vs. better comparisons and save
 plots_comp_emp <- plot_comp_emp_energy + plot_comp_emp_date +
-               plot_layout(nrow=1, ncol=2, axe="collect") +
+               plot_layout(nrow=1, ncol=2, axes="collect") +
                plot_annotation(tag_levels="A", tag_prefix="(", tag_suffix=")")
 ggsave(filename="Plots/FIGURE_S_COMP_EMP.png", plot=plots_comp_emp,
        width=5, height=2.5, unit="in")
@@ -691,7 +695,7 @@ plot_outcomes_smooth <- ggplot(outcomes) +
                      annotate(geom="text", label="Successful", hjust=0, vjust=1, x=157, y=0.94, size=3, lineheight=1, colour="black") +
                      annotate(geom="text", label="(Fail)\nCold shock", hjust=0, vjust=1, x=131, y=0.89, size=3, lineheight=1, colour="#7570b3") + 
                      annotate(geom="text", label="(Fail)\nSlow dev.", hjust=0, vjust=1, x=155, y=0.22, size=3, lineheight=1, colour="#1b9e77") +
-                     annotate(geom="text", label="(Fail)\nParent dead", hjust=0, vjust=1, x=130.5, y=0.23, size=3, lineheight=1, colour="#d95f02") +
+                     annotate(geom="text", label="(Fail)\nParent death", hjust=0, vjust=1, x=130.5, y=0.23, size=3, lineheight=1, colour="#d95f02") +
                      scale_colour_manual(values=c("Success"="black",
                                                   "Fail_Egg_Cold"="#7570b3",
                                                   "Fail_Egg_Time"="#1b9e77",
@@ -738,12 +742,34 @@ plot_outcome_dead <- ggplot(filter(outcomes, Outcome=="Fail_Parent_Dead")) +
                   geom_line(aes(x=Foraging_Condition_Mean, y=Rate, 
                                 group=Strategy_Combination),
                             colour="#d95f02", alpha=0.25, linewidth=0.25)  +
-                  annotate(geom="text", label="Parent\ndead", hjust=0, vjust=1, x=130, y=1.0, size=3, lineheight=1, colour="#d95f02") +
+                  annotate(geom="text", label="Parent\ndeath", hjust=0, vjust=1, x=130, y=1.0, size=3, lineheight=1, colour="#d95f02") +
                   scale_y_continuous(limits=c(0, 1), breaks=seq(0, 1, by=0.25)) +
                   xlab("Foraging mean (kJ/day)") +
                   ylab("Outcome rate") +
                   guides(colour="none") +
                   theme_lt
+
+# Assemble outcomes plot
+
+design <- "123
+           145"
+
+plot_outcomes <- plot_outcomes_smooth + 
+              plot_outcome_success + plot_outcome_cold + 
+              plot_outcome_time + plot_outcome_dead +
+              plot_layout(widths=c(1, 0.5, 0.5),
+                          design = design,
+                          axes="collect") +
+              theme(legend.key.width = unit(0.1, "in"),
+                    legend.key.height = unit(0.1, "in"),
+                    legend.margin = margin(t=0, r=0, b=0, l=0),
+                    legend.box.spacing = unit(0.06, "in"),                  
+                    plot.tag.position="topleft",
+                    plot.tag=element_text(vjust=-2, hjust=-1),
+                    plot.margin = margin(t=2, r=4, b=2, l=4))
+  
+ggsave(filename="Plots/FIGURE_5.png", plot=plot_outcomes, 
+       width=6.5, height=3, unit="in")
 
 # Report average outcome rates as foraging conditions change
 cat("\n\nOutcome rate (%) across all strategy combinations as environment changes:\n", file=OF, append=TRUE)
@@ -793,6 +819,9 @@ plot_egg_tolerance <- ggplot(dat_eggTolerance) +
                    theme(strip.background=element_rect(colour="transparent", fill="transparent"),
                          strip.text=element_text(size=8, hjust=1))
 
+ggsave(filename="Plots/FIGURE_6.png", plot=plot_egg_tolerance, 
+       width=6.5, height=2.5, unit="in")
+
 # Print changing success rates as egg cold tolerance declines
 cat("\n\nOutcome rate (%) across empirical strategy combinations as egg tolerance changes :\n", file=OF, append=TRUE)
 sink(OF, append=TRUE)
@@ -804,36 +833,6 @@ dat_eggTolerance |>
   pivot_wider(id_cols = Foraging_Condition_Mean, names_from = Egg_Tolerance, values_from = Rate_Success) |>
   print()
 sink()
-
-###############################################################
-### Prepare joined Figure 5
-############################################################
-
-design <- "123
-           145
-           666"
-
-plot_outcomes <- plot_outcomes_smooth + 
-              plot_outcome_success + plot_outcome_cold + 
-              plot_outcome_time + plot_outcome_dead +
-              plot_egg_tolerance +
-              plot_annotation(tag_levels = list(c("(A)", "", "", "", "", "(B)"))) +
-              plot_layout(widths=c(1, 0.5, 0.5), heights=c(1, 1, 1.4),
-                          design = design,
-                          axes="collect")
-  
-            #   plot_layout(design=design,
-            #               widths=c(1, 0.7)) &
-            #   theme(legend.key.width = unit(0.1, "in"),
-            #         legend.key.height = unit(0.1, "in"),
-            #         legend.margin = margin(t=0, r=0, b=0, l=0),
-            #         legend.box.spacing = unit(0.06, "in"),                  
-            #         plot.tag.position="topleft",
-            #         plot.tag=element_text(vjust=-2, hjust=-1),
-            #         plot.margin = margin(t=2, r=4, b=2, l=4))
-  
-ggsave(filename="Plots/FIGURE_5.png", plot=plot_outcomes, 
-       width=6.5, height=5, unit="in")
 
 ###############################################################
 ### One parent energy requirements
